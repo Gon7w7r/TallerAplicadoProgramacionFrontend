@@ -1,47 +1,47 @@
 const DIAS = ["L", "M", "X", "J", "V", "S"];
 
+function getCellStyle(content) {
+  if (content.startsWith("PRG")) return "bg-blue-100 text-blue-800";
+  if (content.startsWith("MTM")) return "bg-emerald-100 text-emerald-800";
+  if (content.startsWith("LNG")) return "bg-amber-100 text-amber-800";
+  return "";
+}
+
 export default function HorarioTable({ rows = [] }) {
   return (
-    <div className="border border-black w-full">
-      {/* Título */}
-      <div className="border-b border-black text-center text-sm font-semibold py-1 bg-gray-100">
-        Horario
-      </div>
-
-      <table className="w-full text-xs border-collapse table-fixed">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-black px-1 py-1 w-14 text-center">Hora</th>
-            {DIAS.map((d) => (
-              <th key={d} className="border border-black px-1 py-1 text-center">
-                {d}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.hora}>
-              <td className="border border-black px-1 py-2 text-center font-medium bg-gray-50 text-xs">
-                {row.hora}
-              </td>
-              {DIAS.map((d) => {
-                const content = row[d] || "";
-                return (
-                  <td
-                    key={d}
-                    className={`border border-black px-1 py-2 text-center text-xs whitespace-pre-line leading-tight ${
-                      content ? "bg-gray-200" : ""
-                    }`}
-                  >
-                    {content}
-                  </td>
-                );
-              })}
-            </tr>
+    <table className="w-full text-xs border-collapse table-fixed">
+      <thead>
+        <tr style={{ backgroundColor: "#1A2E4A" }}>
+          <th className="px-4 py-3 text-left text-white font-semibold w-16">Hora</th>
+          {DIAS.map((d) => (
+            <th key={d} className="px-4 py-3 text-center text-white font-semibold">{d}</th>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, idx) => (
+          <tr key={row.hora} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+            <td className="border-b border-gray-200 px-4 py-3 text-gray-700 font-medium">{row.hora}</td>
+            {DIAS.map((d) => {
+              const content = row[d] || "";
+              const [codigo, sala] = content.split("\n");
+              return (
+                <td
+                  key={d}
+                  className={`border border-gray-200 px-2 py-3 text-center text-xs whitespace-pre-line leading-tight ${getCellStyle(content)}`}
+                >
+                  {content && (
+                    <>
+                      <div className="font-medium">{codigo}</div>
+                      <div className="opacity-70">{sala}</div>
+                    </>
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

@@ -7,11 +7,36 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (rut.trim()) {
-      sessionStorage.setItem("rut", rut.trim());
+
+    try {
+
+      const response = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rut,
+          password,
+        }),
+      });
+
+      if (!response.ok) {
+        alert("RUT o contraseña incorrectos");
+        return;
+      }
+
+      const usuario = await response.json();
+
+      sessionStorage.setItem("usuario", JSON.stringify(usuario));
+
       navigate("/alumno/ramos");
+
+    } catch (error) {
+      console.error(error);
+      alert("Error conectando con el servidor");
     }
   };
 

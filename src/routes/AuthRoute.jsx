@@ -1,7 +1,12 @@
 import { Navigate } from "react-router-dom";
 
 export default function AuthRoute({ children }) {
-  const isAuthenticated = !!sessionStorage.getItem("rut");
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  const usuario = sessionStorage.getItem("usuario");
+
+  if (!usuario) {
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 }

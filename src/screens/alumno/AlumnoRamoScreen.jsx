@@ -224,7 +224,7 @@ export default function AlumnoRamoScreen() {
                 >
 
                   <p className="font-medium text-gray-900 text-sm">
-                    {r.nombre}
+                    {r.nombreAsignatura}
                   </p>
 
                   <p className="text-xs text-gray-500 mb-2">
@@ -251,7 +251,7 @@ export default function AlumnoRamoScreen() {
 
                             agregarSeccion(
                               r.idAsignatura,
-                              r.nombre,
+                              r.nombreAsignatura,
                               s.idSeccion
                             );
                           }}

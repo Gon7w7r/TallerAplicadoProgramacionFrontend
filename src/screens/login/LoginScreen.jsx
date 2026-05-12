@@ -29,6 +29,7 @@ export default function LoginScreen() {
       }
 
       const usuario = await response.json();
+      console.log(usuario);
 
       sessionStorage.setItem("usuario", JSON.stringify(usuario));
 

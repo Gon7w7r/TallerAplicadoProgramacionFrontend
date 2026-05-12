@@ -1,14 +1,70 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HorarioTable from "../../components/common/HorarioTable";
-import { ramos, secciones, buildHorario, bloquesPorSeccion } from "../../data/mockData";
+import { buildHorario, bloquesPorSeccion } from "../../data/mockData";
 import { useInscripcion } from "../../context/InscripcionContext";
 
 export default function AlumnoRamoScreen() {
   const [selected, setSelected] = useState(null);
+  const [asignaturas, setAsignaturas] = useState([]);
   const [conflicto, setConflicto] = useState(false);
   const { inscripciones, agregarSeccion, quitarSeccion } = useInscripcion();
   const navigate = useNavigate();
+  const usuario= JSON.parse(sessionStorage.getItem("usuario"));
+  const [secciones, setSecciones] = useState({});
+
+  
+  useEffect(() => {
+
+  const obtenerAsignaturas = async () => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8080/alumnos/${usuario.idAlumno}/asignaturas-disponibles`
+      );
+
+      const data = await response.json();
+
+      console.log("ASIGNATURAS:", data);
+
+      setAsignaturas(data);
+      data.forEach((asignatura) => {
+        obtenerSecciones(asignatura.idAsignatura);
+      });
+      
+
+    } catch (error) {
+
+      console.error("Error:", error);
+
+    }
+
+  };
+
+  obtenerAsignaturas();
+
+  }, []);
+  const obtenerSecciones = async (idAsignatura) => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8080/secciones/asignatura/${idAsignatura}`
+      );
+
+      const data = await response.json();
+
+      setSecciones(prev => ({
+        ...prev,
+        [idAsignatura]: data
+      }));
+
+    } catch (error) {
+      console.error("Error obteniendo secciones:", error);
+    }
+  };
+
 
   const seccionesInscritas = Object.values(inscripciones).map((i) => i.seccionId);
   const rows = buildHorario(seccionesInscritas);
@@ -25,22 +81,33 @@ export default function AlumnoRamoScreen() {
 
     setSelected(ramoId);
 
+    const asignatura = asignaturas.find(
+      (a) => a.idAsignatura === ramoId
+    );
+
     const primeraSeccion = secciones[ramoId]?.[0];
     if (!primeraSeccion) return;
 
-    const bloquesNuevos = bloquesPorSeccion[primeraSeccion] || [];
-    const bloquesExistentes = seccionesInscritas.flatMap((s) => bloquesPorSeccion[s] || []);
-    const hayConflicto = bloquesNuevos.some((nuevo) =>
-      bloquesExistentes.some((ex) => ex.hora === nuevo.hora && ex.dia === nuevo.dia)
+    // const bloquesNuevos = bloquesPorSeccion[primeraSeccion] || [];
+    // const bloquesExistentes = seccionesInscritas.flatMap((s) => bloquesPorSeccion[s] || []);
+    // const hayConflicto = bloquesNuevos.some((nuevo) =>
+    //   bloquesExistentes.some((ex) => ex.hora === nuevo.hora && ex.dia === nuevo.dia)
+    // );
+
+    // if (hayConflicto) {
+    //   setConflicto(true);
+    //   return;
+    // }
+
+
+    const ramo = asignaturas.find(
+      (r) => r.idAsignatura === ramoId
     );
-
-    if (hayConflicto) {
-      setConflicto(true);
-      return;
-    }
-
-    const ramo = ramos.find((r) => r.id === ramoId);
-    agregarSeccion(ramoId, ramo?.nombre, primeraSeccion);
+    agregarSeccion(
+      ramoId,
+      ramo?.nombre,
+      primeraSeccion?.idSeccion
+    );
   };
 
   return (
@@ -66,29 +133,54 @@ export default function AlumnoRamoScreen() {
           <h2 className="text-base font-bold text-gray-900 mb-4">Mis Ramos</h2>
 
           <ul className="flex flex-col gap-2">
-            {ramos.map((r) => {
-              const inscrito = !!inscripciones[r.id];
+            {asignaturas.map((r) => {
+              const inscrito = !!inscripciones[r.idAsignatura];
               return (
                 <li
-                  key={r.id}
-                  onClick={() => handleSelectRamo(r.id)}
+                  key={r.idAsignatura}
+                  onClick={() => handleSelectRamo(r.idAsignatura)}
                   className={`
                     border-l-4 p-4 cursor-pointer transition-colors
-                    ${r.id === 1 ? "border-blue-500" : ""}
-                    ${r.id === 2 ? "border-emerald-500" : ""}
-                    ${r.id === 3 ? "border-amber-500" : ""}
-                    ${r.id === 1 && inscrito ? "bg-blue-50" : ""}
-                    ${r.id === 2 && inscrito ? "bg-emerald-50" : ""}
-                    ${r.id === 3 && inscrito ? "bg-amber-50" : ""}
-                    ${r.id === 1 && !inscrito ? "hover:bg-blue-50" : ""}
-                    ${r.id === 2 && !inscrito ? "hover:bg-emerald-50" : ""}
-                    ${r.id === 3 && !inscrito ? "hover:bg-amber-50" : ""}
+                    ${r.idAsignatura === 1 ? "border-blue-500" : ""}
+                    ${r.idAsignatura === 2 ? "border-emerald-500" : ""}
+                    ${r.idAsignatura === 3 ? "border-amber-500" : ""}
+                    ${r.idAsignatura === 1 && inscrito ? "bg-blue-50" : ""}
+                    ${r.idAsignatura === 2 && inscrito ? "bg-emerald-50" : ""}
+                    ${r.idAsignatura === 3 && inscrito ? "bg-amber-50" : ""}
+                    ${r.idAsignatura === 1 && !inscrito ? "hover:bg-blue-50" : ""}
+                    ${r.idAsignatura === 2 && !inscrito ? "hover:bg-emerald-50" : ""}
+                    ${r.idAsignatura === 3 && !inscrito ? "hover:bg-amber-50" : ""}
                   `}
                 >
-                  <p className="font-medium text-gray-900 text-sm">{r.nombre}</p>
-                  <p className="text-xs text-gray-500">
-                    {inscrito ? inscripciones[r.id].seccionId : r.id}
+
+                  <p className="font-medium text-gray-900 text-sm">
+                    {r.nombre}
                   </p>
+
+                  <p className="text-xs text-gray-500 mb-2">
+                    {secciones[r.idAsignatura]?.length || 0} secciones disponibles
+                  </p>
+
+                  <div className="flex flex-col gap-1">
+                    {secciones[r.idAsignatura]?.map((s) => (
+                      <button
+                        key={s.idSeccion}
+                        onClick={(e) => {
+                          e.stopPropagation();
+
+                          agregarSeccion(
+                            r.idAsignatura,
+                            r.nombre,
+                            s.idSeccion
+                          );
+                        }}
+                        className="text-xs border rounded px-2 py-1 hover:bg-gray-100 text-left"
+                      >
+                        Sección {s.idSeccion} — {s.profesor.usuario.nombre}
+                      </button>
+                    ))}
+                  </div>
+
                 </li>
               );
             })}

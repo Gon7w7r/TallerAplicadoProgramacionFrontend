@@ -1,47 +1,121 @@
 const DIAS = ["L", "M", "X", "J", "V", "S"];
 
-function getCellStyle(content) {
-  if (content.startsWith("PRG")) return "bg-blue-100 text-blue-800";
-  if (content.startsWith("MTM")) return "bg-emerald-100 text-emerald-800";
-  if (content.startsWith("LNG")) return "bg-amber-100 text-amber-800";
-  return "";
-}
+const HORAS = [
+  "08:30",
+  "09:30",
+  "10:30",
+  "11:30",
+  "12:30",
+  "13:30",
+  "14:30",
+  "15:30",
+  "16:30",
+  "17:30",
+  "18:30",
+  "19:30",
+  "20:30"
+];
 
 export default function HorarioTable({ rows = [] }) {
+
+  const rowMap = {};
+
+  rows.forEach((r) => {
+    rowMap[r.hora] = r;
+  });
+
+  const ocupadas = {};
+
   return (
     <table className="w-full text-xs border-collapse table-fixed">
+
       <thead>
         <tr style={{ backgroundColor: "#1A2E4A" }}>
-          <th className="px-4 py-3 text-left text-white font-semibold w-16">Hora</th>
+          <th className="px-4 py-3 text-left text-white font-semibold w-20">
+            Hora
+          </th>
+
           {DIAS.map((d) => (
-            <th key={d} className="px-4 py-3 text-center text-white font-semibold">{d}</th>
+            <th
+              key={d}
+              className="px-4 py-3 text-center text-white font-semibold"
+            >
+              {d}
+            </th>
           ))}
         </tr>
       </thead>
+
       <tbody>
-        {rows.map((row, idx) => (
-          <tr key={row.hora} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-            <td className="border-b border-gray-200 px-4 py-3 text-gray-700 font-medium">{row.hora}</td>
-            {DIAS.map((d) => {
-              const content = row[d] || "";
-              const [codigo, sala] = content.split("\n");
-              return (
-                <td
-                  key={d}
-                  className={`border border-gray-200 px-2 py-3 text-center text-xs whitespace-pre-line leading-tight ${getCellStyle(content)}`}
-                >
-                  {content && (
-                    <>
-                      <div className="font-medium">{codigo}</div>
-                      <div className="opacity-70">{sala}</div>
-                    </>
-                  )}
-                </td>
-              );
-            })}
-          </tr>
-        ))}
+
+        {HORAS.map((hora, rowIndex) => {
+
+          const row = rowMap[hora] || {};
+
+          return (
+            <tr key={hora} className="h-20">
+
+              <td className="border px-2 py-2 font-medium bg-gray-50">
+                {hora}
+              </td>
+
+              {DIAS.map((dia) => {
+
+                const ocupadoKey = `${dia}-${rowIndex}`;
+
+                if (ocupadas[ocupadoKey]) {
+                  return null;
+                }
+
+                const bloque = row[dia];
+
+                if (!bloque) {
+                  return (
+                    <td
+                      key={dia}
+                      className="border border-gray-200"
+                    />
+                  );
+                }
+
+                for (let i = 1; i < bloque.span; i++) {
+                  ocupadas[`${dia}-${rowIndex + i}`] = true;
+                }
+
+                return (
+                  <td
+                    key={dia}
+                    rowSpan={bloque.span}
+                    className={`
+                      border border-gray-200
+                      ${bloque.estilo?.bg}
+                      ${bloque.estilo?.text}
+                      align-top p-2
+                    `}
+                  >
+                    <div className="font-semibold">
+                      {bloque.ramo}
+                    </div>
+
+                    <div className="text-xs mt-1">
+                      {bloque.inicio} - {bloque.fin}
+                    </div>
+
+                    <div className="text-xs opacity-70">
+                      {bloque.sala}
+                    </div>
+                  </td>
+                );
+
+              })}
+
+            </tr>
+          );
+
+        })}
+
       </tbody>
+
     </table>
   );
 }

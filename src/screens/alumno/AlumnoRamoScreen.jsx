@@ -1,10 +1,53 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HorarioTable from "../../components/common/HorarioTable";
-import { buildHorario, bloquesPorSeccion } from "../../data/mockData";
 import { useInscripcion } from "../../context/InscripcionContext";
 
+
+
+
+
+
 export default function AlumnoRamoScreen() {
+
+  const ESTILOS_RAMOS = [
+    {
+      border: "border-blue-500",
+      bg: "bg-blue-100",
+      hover: "hover:bg-blue-50",
+      text: "text-blue-800"
+    },
+    {
+      border: "border-emerald-500",
+      bg: "bg-emerald-100",
+      hover: "hover:bg-emerald-50",
+      text: "text-emerald-800"
+    },
+    {
+      border: "border-amber-500",
+      bg: "bg-amber-100",
+      hover: "hover:bg-amber-50",
+      text: "text-amber-800"
+    },
+    {
+      border: "border-purple-500",
+      bg: "bg-purple-100",
+      hover: "hover:bg-purple-50",
+      text: "text-purple-800"
+    },
+    {
+      border: "border-pink-500",
+      bg: "bg-pink-100",
+      hover: "hover:bg-pink-50",
+      text: "text-pink-800"
+    },
+    {
+      border: "border-cyan-500",
+      bg: "bg-cyan-100",
+      hover: "hover:bg-cyan-50",
+      text: "text-cyan-800"
+    }
+  ];
   const [selected, setSelected] = useState(null);
   const [asignaturas, setAsignaturas] = useState([]);
   const [conflicto, setConflicto] = useState(false);
@@ -13,6 +56,65 @@ export default function AlumnoRamoScreen() {
   const usuario= JSON.parse(sessionStorage.getItem("usuario"));
   const [secciones, setSecciones] = useState({});
 
+  const buildHorario = () => {
+
+    const bloques = {};
+
+    Object.values(inscripciones).forEach((inscripcion) => {
+
+      const seccion = Object.values(secciones)
+        .flat()
+        .find((s) => s.idSeccion === inscripcion.seccionId);
+
+      if (!seccion) return;
+
+      seccion.horarios.forEach((h) => {
+
+        const inicio = parseInt(h.horario.horaInicio.slice(0,2));
+        const fin = parseInt(h.horario.horaFin.slice(0,2));
+
+        const diaMap = {
+          LUNES: "L",
+          MARTES: "M",
+          MIERCOLES: "X",
+          JUEVES: "J",
+          VIERNES: "V",
+          SABADO: "S"
+        };
+
+        const dia = diaMap[h.horario.diaSemana];
+
+        const horaInicio = `${inicio.toString().padStart(2,"0")}:30`;
+
+        if (!bloques[horaInicio]) {
+          bloques[horaInicio] = {
+            hora: horaInicio
+          };
+        }
+        const asignaturaIndex = asignaturas.findIndex(
+          (a) => a.idAsignatura === inscripcion.ramoId
+        );
+
+        const estilo = ESTILOS_RAMOS[
+          asignaturaIndex % ESTILOS_RAMOS.length
+        ];
+        bloques[horaInicio][dia] = {
+          ramo: inscripcion.nombreRamo,
+          sala: seccion.sala.nombre,
+          inicio: h.horario.horaInicio.slice(0,5),
+          fin: h.horario.horaFin.slice(0,5),
+          span: fin - inicio,
+          estilo
+        };
+
+      });
+
+    });
+
+    return Object.values(bloques).sort(
+      (a, b) => a.hora.localeCompare(b.hora)
+    );
+  };
   
   useEffect(() => {
 
@@ -66,48 +168,22 @@ export default function AlumnoRamoScreen() {
   };
 
 
-  const seccionesInscritas = Object.values(inscripciones).map((i) => i.seccionId);
-  const rows = buildHorario(seccionesInscritas);
+  const rows = buildHorario();
+  const seccionesInscritas = Object.values(inscripciones).map(
+  (i) => i.seccionId
+  );
   const hayInscritos = seccionesInscritas.length > 0;
 
   const handleSelectRamo = (ramoId) => {
+
     setConflicto(false);
 
-    if (inscripciones[ramoId]) {
-      quitarSeccion(ramoId);
+    if (selected === ramoId) {
       setSelected(null);
-      return;
+    } else {
+      setSelected(ramoId);
     }
 
-    setSelected(ramoId);
-
-    const asignatura = asignaturas.find(
-      (a) => a.idAsignatura === ramoId
-    );
-
-    const primeraSeccion = secciones[ramoId]?.[0];
-    if (!primeraSeccion) return;
-
-    // const bloquesNuevos = bloquesPorSeccion[primeraSeccion] || [];
-    // const bloquesExistentes = seccionesInscritas.flatMap((s) => bloquesPorSeccion[s] || []);
-    // const hayConflicto = bloquesNuevos.some((nuevo) =>
-    //   bloquesExistentes.some((ex) => ex.hora === nuevo.hora && ex.dia === nuevo.dia)
-    // );
-
-    // if (hayConflicto) {
-    //   setConflicto(true);
-    //   return;
-    // }
-
-
-    const ramo = asignaturas.find(
-      (r) => r.idAsignatura === ramoId
-    );
-    agregarSeccion(
-      ramoId,
-      ramo?.nombre,
-      primeraSeccion?.idSeccion
-    );
   };
 
   return (
@@ -133,7 +209,8 @@ export default function AlumnoRamoScreen() {
           <h2 className="text-base font-bold text-gray-900 mb-4">Mis Ramos</h2>
 
           <ul className="flex flex-col gap-2">
-            {asignaturas.map((r) => {
+            {asignaturas.map((r, index) => {
+              const estilo = ESTILOS_RAMOS[index % ESTILOS_RAMOS.length];
               const inscrito = !!inscripciones[r.idAsignatura];
               return (
                 <li
@@ -141,15 +218,8 @@ export default function AlumnoRamoScreen() {
                   onClick={() => handleSelectRamo(r.idAsignatura)}
                   className={`
                     border-l-4 p-4 cursor-pointer transition-colors
-                    ${r.idAsignatura === 1 ? "border-blue-500" : ""}
-                    ${r.idAsignatura === 2 ? "border-emerald-500" : ""}
-                    ${r.idAsignatura === 3 ? "border-amber-500" : ""}
-                    ${r.idAsignatura === 1 && inscrito ? "bg-blue-50" : ""}
-                    ${r.idAsignatura === 2 && inscrito ? "bg-emerald-50" : ""}
-                    ${r.idAsignatura === 3 && inscrito ? "bg-amber-50" : ""}
-                    ${r.idAsignatura === 1 && !inscrito ? "hover:bg-blue-50" : ""}
-                    ${r.idAsignatura === 2 && !inscrito ? "hover:bg-emerald-50" : ""}
-                    ${r.idAsignatura === 3 && !inscrito ? "hover:bg-amber-50" : ""}
+                    ${estilo.border}
+                    ${inscrito ? estilo.bg : estilo.hover}
                   `}
                 >
 
@@ -161,25 +231,51 @@ export default function AlumnoRamoScreen() {
                     {secciones[r.idAsignatura]?.length || 0} secciones disponibles
                   </p>
 
-                  <div className="flex flex-col gap-1">
-                    {secciones[r.idAsignatura]?.map((s) => (
-                      <button
-                        key={s.idSeccion}
-                        onClick={(e) => {
-                          e.stopPropagation();
+                  {selected === r.idAsignatura && (
+                    <div className="flex flex-col gap-1">
+                      {secciones[r.idAsignatura]?.map((s) => {
 
-                          agregarSeccion(
-                            r.idAsignatura,
-                            r.nombre,
-                            s.idSeccion
-                          );
-                        }}
-                        className="text-xs border rounded px-2 py-1 hover:bg-gray-100 text-left"
-                      >
-                        Sección {s.idSeccion} — {s.profesor.usuario.nombre}
-                      </button>
-                    ))}
-                  </div>
+                          const seleccionada =
+                            inscripciones[r.idAsignatura]?.seccionId === s.idSeccion;
+
+                          return (
+                            <button
+                          key={s.idSeccion}
+                          onClick={(e) => {
+                            e.stopPropagation();
+
+                            if (inscripciones[r.idAsignatura]?.seccionId === s.idSeccion) {
+                              quitarSeccion(r.idAsignatura);
+                              return;
+                            }
+
+                            agregarSeccion(
+                              r.idAsignatura,
+                              r.nombre,
+                              s.idSeccion
+                            );
+                          }}
+                          className={`
+                              text-xs border rounded px-2 py-1 text-left transition-colors
+                              ${seleccionada
+                                ? "bg-blue-100 border-blue-500"
+                                : "hover:bg-gray-100"}
+                            `}
+                        >
+                          Sección {s.idSeccion} — {s.profesor.usuario.nombre}
+
+                          {s.horarios.map((h) => (
+                            <div key={h.horario.idHorario}>
+                              {h.horario.diaSemana}{" "}
+                              {h.horario.horaInicio.slice(0,5)} -{" "}
+                              {h.horario.horaFin.slice(0,5)}
+                            </div>
+                          ))}
+                        </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                 </li>
               );

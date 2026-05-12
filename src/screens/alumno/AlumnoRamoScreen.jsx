@@ -101,6 +101,7 @@ export default function AlumnoRamoScreen() {
         bloques[horaInicio][dia] = {
           ramo: inscripcion.nombreRamo,
           sala: seccion.sala.nombre,
+          seccion: seccion.idSeccion,
           inicio: h.horario.horaInicio.slice(0,5),
           fin: h.horario.horaFin.slice(0,5),
           span: fin - inicio,

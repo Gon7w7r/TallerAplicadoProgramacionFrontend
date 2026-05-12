@@ -96,6 +96,10 @@ export default function HorarioTable({ rows = [] }) {
                     <div className="font-semibold">
                       {bloque.ramo}
                     </div>
+                    
+                    <div className="text-xs mt-1 opacity-80"> 
+                      Sección {bloque.seccion}
+                    </div>
 
                     <div className="text-xs mt-1">
                       {bloque.inicio} - {bloque.fin}

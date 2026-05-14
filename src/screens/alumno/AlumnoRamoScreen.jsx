@@ -174,6 +174,45 @@ export default function AlumnoRamoScreen() {
   (i) => i.seccionId
   );
   const hayInscritos = seccionesInscritas.length > 0;
+  const confirmarInscripcion = async () => {
+    try {
+
+      const inscripcionesArray = Object.values(inscripciones);
+
+      for (const inscripcion of inscripcionesArray) {
+
+        const response = await fetch(
+          "http://localhost:8080/inscripciones/inscribir",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              idAlumno: usuario.idAlumno,
+              idSeccion: inscripcion.seccionId,
+              idPeriodo: 1
+            })
+          }
+        );
+
+        const mensaje = await response.text();
+
+        console.log(mensaje);
+
+      }
+
+      alert("Inscripción realizada correctamente");
+
+    } catch (error) {
+
+      console.error(error);
+      alert("Error al realizar inscripción");
+
+    }
+
+  };
+
 
   const handleSelectRamo = (ramoId) => {
 
@@ -301,7 +340,7 @@ export default function AlumnoRamoScreen() {
           {hayInscritos && (
             <section className="flex justify-end mt-6">
               <button
-                onClick={() => navigate("/alumno/horario")}
+                onClick={confirmarInscripcion}
                 className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
                 style={{ backgroundColor: "#1A2E4A" }}
               >

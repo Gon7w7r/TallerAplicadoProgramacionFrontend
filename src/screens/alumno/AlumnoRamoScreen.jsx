@@ -51,10 +51,11 @@ export default function AlumnoRamoScreen() {
   const [selected, setSelected] = useState(null);
   const [asignaturas, setAsignaturas] = useState([]);
   const [conflicto, setConflicto] = useState(false);
-  const { inscripciones, agregarSeccion, quitarSeccion } = useInscripcion();
+  const { inscripciones, agregarSeccion, quitarSeccion, limpiarInscripciones } = useInscripcion();
   const navigate = useNavigate();
   const usuario= JSON.parse(sessionStorage.getItem("usuario"));
   const [secciones, setSecciones] = useState({});
+  const [inscripcionesBackend, setInscripcionesBackend] = useState([]);
 
   const buildHorario = () => {
 
@@ -70,8 +71,20 @@ export default function AlumnoRamoScreen() {
 
       seccion.horarios.forEach((h) => {
 
-        const inicio = parseInt(h.horario.horaInicio.slice(0,2));
-        const fin = parseInt(h.horario.horaFin.slice(0,2));
+        const [horaInicioNum, minInicio] = h.horario.horaInicio
+          .split(":")
+          .map(Number);
+
+        const [horaFinNum, minFin] = h.horario.horaFin
+          .split(":")
+          .map(Number);
+
+        const inicioMinutos = horaInicioNum * 60 + minInicio;
+        const finMinutos = horaFinNum * 60 + minFin;
+
+        const span = (finMinutos - inicioMinutos) / 60;
+
+        const horaInicio = h.horario.horaInicio.slice(0,5);
 
         const diaMap = {
           LUNES: "L",
@@ -82,9 +95,14 @@ export default function AlumnoRamoScreen() {
           SABADO: "S"
         };
 
-        const dia = diaMap[h.horario.diaSemana];
+        const normalizar = (str) =>
+          str.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        const horaInicio = `${inicio.toString().padStart(2,"0")}:30`;
+        const dia = diaMap[normalizar(h.horario.diaSemana)];
+
+        if (!dia) return; 
+
+        
 
         if (!bloques[horaInicio]) {
           bloques[horaInicio] = {
@@ -104,7 +122,7 @@ export default function AlumnoRamoScreen() {
           seccion: seccion.idSeccion,
           inicio: h.horario.horaInicio.slice(0,5),
           fin: h.horario.horaFin.slice(0,5),
-          span: fin - inicio,
+          span,
           estilo
         };
 
@@ -117,8 +135,21 @@ export default function AlumnoRamoScreen() {
     );
   };
   
-  useEffect(() => {
+  // USE EFFECT
+useEffect(() => {
 
+  const cargarDatos = async () => {
+
+    await obtenerAsignaturas();
+    await obtenerInscripciones();
+
+  };
+
+  cargarDatos();
+
+}, []);
+
+  // FUNCIONES
   const obtenerAsignaturas = async () => {
 
     try {
@@ -132,10 +163,12 @@ export default function AlumnoRamoScreen() {
       console.log("ASIGNATURAS:", data);
 
       setAsignaturas(data);
-      data.forEach((asignatura) => {
-        obtenerSecciones(asignatura.idAsignatura);
-      });
-      
+
+      await Promise.all(
+        data.map((asignatura) =>
+          obtenerSecciones(asignatura.idAsignatura)
+        )
+      );
 
     } catch (error) {
 
@@ -145,9 +178,6 @@ export default function AlumnoRamoScreen() {
 
   };
 
-  obtenerAsignaturas();
-
-  }, []);
   const obtenerSecciones = async (idAsignatura) => {
 
     try {
@@ -164,8 +194,41 @@ export default function AlumnoRamoScreen() {
       }));
 
     } catch (error) {
+
       console.error("Error obteniendo secciones:", error);
+
     }
+
+  };
+
+  const obtenerInscripciones = async () => {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:8080/inscripciones/alumno/${usuario.idAlumno}`
+      );
+
+      const data = await response.json();
+
+      setInscripcionesBackend(data);
+
+      data.forEach((i) => {
+
+        agregarSeccion(
+          i.idAsignatura,
+          i.nombreAsignatura,
+          i.idSeccion
+        );
+
+      });
+
+    } catch (error) {
+
+      console.error("Error obteniendo inscripciones", error);
+
+    }
+
   };
 
 
@@ -174,35 +237,64 @@ export default function AlumnoRamoScreen() {
   (i) => i.seccionId
   );
   const hayInscritos = seccionesInscritas.length > 0;
+  const seccionesOriginales = inscripcionesBackend
+  .map((i) => i.idSeccion)
+  .sort();
+
+  const seccionesActuales = Object.values(inscripciones)
+    .map((i) => i.seccionId)
+    .sort();
+
+  const hayCambios =
+    JSON.stringify(seccionesOriginales) !==
+    JSON.stringify(seccionesActuales);
+    
   const confirmarInscripcion = async () => {
+
     try {
+          const seccionesYaInscritas = inscripcionesBackend.map(
+      (i) => i.idSeccion
+    );
 
-      const inscripcionesArray = Object.values(inscripciones);
+    const secciones = Object.values(inscripciones)
+    .map((i) => i.seccionId);
 
-      for (const inscripcion of inscripcionesArray) {
+      const response = await fetch(
+        "http://localhost:8080/inscripciones/inscribir-multiple",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            idAlumno: usuario.idAlumno,
+            idPeriodo: 1,
+            secciones
+          })
+        }
+      );
 
-        const response = await fetch(
-          "http://localhost:8080/inscripciones/inscribir",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              idAlumno: usuario.idAlumno,
-              idSeccion: inscripcion.seccionId,
-              idPeriodo: 1
-            })
-          }
+      const mensajes = await response.json();
+
+      console.log(mensajes);
+
+      const errores = mensajes.filter(
+        (m) => !m.includes("exitosa")
+      );
+
+      if (errores.length > 0) {
+
+        alert(
+          "Ocurrieron errores:\n\n" +
+          errores.join("\n")
         );
 
-        const mensaje = await response.text();
-
-        console.log(mensaje);
-
+        return;
       }
 
       alert("Inscripción realizada correctamente");
+
+      await obtenerInscripciones();
 
     } catch (error) {
 
@@ -233,8 +325,13 @@ export default function AlumnoRamoScreen() {
       <header style={{ backgroundColor: "#1A2E4A" }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-white text-xl font-semibold">Inscripción de Ramos</h1>
+
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              limpiarInscripciones();
+              sessionStorage.removeItem("usuario");
+              navigate("/");
+            }}
             className="px-4 py-2 border-2 border-white text-white text-sm rounded-md hover:bg-white/10 transition-colors"
           >
             Logout
@@ -251,7 +348,11 @@ export default function AlumnoRamoScreen() {
           <ul className="flex flex-col gap-2">
             {asignaturas.map((r, index) => {
               const estilo = ESTILOS_RAMOS[index % ESTILOS_RAMOS.length];
-              const inscrito = !!inscripciones[r.idAsignatura];
+              const inscripcionExistente = inscripcionesBackend.find(
+                (i) => i.idAsignatura === r.idAsignatura
+              );
+              const inscrito =
+                !!inscripciones[r.idAsignatura] || !!inscripcionExistente;
               return (
                 <li
                   key={r.idAsignatura}
@@ -272,50 +373,70 @@ export default function AlumnoRamoScreen() {
                   </p>
 
                   {selected === r.idAsignatura && (
+                  inscripcionExistente ? (
+
+                    <div className="text-xs mt-2 text-gray-600">
+                      Ya inscrito en sección {inscripcionExistente.idSeccion}
+                    </div>
+
+                  ) : (
+
                     <div className="flex flex-col gap-1">
+
                       {secciones[r.idAsignatura]?.map((s) => {
 
-                          const seleccionada =
-                            inscripciones[r.idAsignatura]?.seccionId === s.idSeccion;
+                        const seleccionada =
+                          inscripciones[r.idAsignatura]?.seccionId === s.idSeccion;
 
-                          return (
-                            <button
-                          key={s.idSeccion}
-                          onClick={(e) => {
-                            e.stopPropagation();
+                        return (
+                          <button
+                            key={s.idSeccion}
+                            onClick={(e) => {
 
-                            if (inscripciones[r.idAsignatura]?.seccionId === s.idSeccion) {
-                              quitarSeccion(r.idAsignatura);
-                              return;
-                            }
+                              e.stopPropagation();
 
-                            agregarSeccion(
-                              r.idAsignatura,
-                              r.nombreAsignatura,
-                              s.idSeccion
-                            );
-                          }}
-                          className={`
+                              if (seleccionada) {
+
+                                quitarSeccion(r.idAsignatura);
+                                return;
+
+                              }
+
+                              agregarSeccion(
+                                r.idAsignatura,
+                                r.nombreAsignatura,
+                                s.idSeccion
+                              );
+
+                            }}
+                            className={`
                               text-xs border rounded px-2 py-1 text-left transition-colors
                               ${seleccionada
                                 ? "bg-blue-100 border-blue-500"
                                 : "hover:bg-gray-100"}
                             `}
-                        >
-                          Sección {s.idSeccion} — {s.profesor.usuario.nombre}
+                          >
 
-                          {s.horarios.map((h) => (
-                            <div key={h.horario.idHorario}>
-                              {h.horario.diaSemana}{" "}
-                              {h.horario.horaInicio.slice(0,5)} -{" "}
-                              {h.horario.horaFin.slice(0,5)}
-                            </div>
-                          ))}
-                        </button>
+                            Sección {s.idSeccion} — {s.profesor.usuario.nombre}
+
+                            {s.horarios.map((h) => (
+                              <div key={h.horario.idHorario}>
+                                {h.horario.diaSemana}{" "}
+                                {h.horario.horaInicio.slice(0,5)} -{" "}
+                                {h.horario.horaFin.slice(0,5)}
+                              </div>
+                            ))}
+
+                          </button>
                         );
+
                       })}
+
                     </div>
-                  )}
+
+                  )
+
+                )}
 
                 </li>
               );
@@ -337,11 +458,17 @@ export default function AlumnoRamoScreen() {
           </div>
 
           {/* ── Confirmar inscripción ── */}
-          {hayInscritos && (
+          {hayCambios && (
             <section className="flex justify-end mt-6">
               <button
                 onClick={confirmarInscripcion}
-                className="px-6 py-3 text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                disabled={!hayCambios}
+                className={`
+                  px-6 py-3 text-white font-medium rounded-lg transition-opacity
+                  ${!hayCambios
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:opacity-90"}
+                `}
                 style={{ backgroundColor: "#1A2E4A" }}
               >
                 Confirmar Inscripción

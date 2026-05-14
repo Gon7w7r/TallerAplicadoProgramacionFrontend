@@ -1,28 +1,40 @@
 const DIAS = ["L", "M", "X", "J", "V", "S"];
 
-const HORAS = [
-  "08:30",
-  "09:30",
-  "10:30",
-  "11:30",
-  "12:30",
-  "13:30",
-  "14:30",
-  "15:30",
-  "16:30",
-  "17:30",
-  "18:30",
-  "19:30",
-  "20:30"
-];
+const generarHoras = (rows) => {
+  if (rows.length === 0) return [];
+
+  let minMin = Infinity;
+  let maxMin = -Infinity;
+
+  rows.forEach((row) => {
+    const [h, m] = row.hora.split(":").map(Number);
+    minMin = Math.min(minMin, h * 60 + m);
+
+    // Usa el fin real de cada bloque para saber hasta dónde llega
+    DIAS.forEach((dia) => {
+      if (row[dia]) {
+        const [fh, fm] = row[dia].fin.split(":").map(Number);
+        maxMin = Math.max(maxMin, fh * 60 + fm);
+      }
+    });
+  });
+
+  const horas = [];
+  for (let m = minMin; m < maxMin; m += 60) {
+    const h = Math.floor(m / 60).toString().padStart(2, "0");
+    const min = (m % 60).toString().padStart(2, "0");
+    horas.push(`${h}:${min}`);
+  }
+  return horas;
+};
+
 
 export default function HorarioTable({ rows = [] }) {
 
-  const rowMap = {};
+  const HORAS = generarHoras(rows);  // ← dinámico
 
-  rows.forEach((r) => {
-    rowMap[r.hora] = r;
-  });
+  const rowMap = {};
+  rows.forEach((r) => { rowMap[r.hora] = r; });
 
   const ocupadas = {};
 

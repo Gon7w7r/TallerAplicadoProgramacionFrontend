@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AccessibilityPanel from "../../components/common/AccessibilityPanel";
+import { useInscripcion } from "../../context/InscripcionContext";
 
 export default function LoginScreen() {
   const [rut, setRut] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { limpiarInscripciones } = useInscripcion();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -32,8 +34,10 @@ export default function LoginScreen() {
       console.log(usuario);
 
       sessionStorage.setItem("usuario", JSON.stringify(usuario));
-
+      limpiarInscripciones(); // ← limpia inscripciones del usuario anterior
       navigate("/alumno/ramos");
+
+          navigate("/alumno/ramos");
 
     } catch (error) {
       console.error(error);

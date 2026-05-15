@@ -473,9 +473,25 @@ useEffect(() => {
               >
                 Confirmar Inscripción
               </button>
+
+              
             </section>
           )}
         </section>
+
+        <button
+          onClick={() => navigate("/alumno/modificar-ramos")}
+          className="
+            mt-4
+            px-6 py-3
+            border
+            border-gray-300
+            rounded-lg
+            hover:bg-gray-100
+          "
+        >
+          Modificar Horario
+      </button>
 
       </main>
 

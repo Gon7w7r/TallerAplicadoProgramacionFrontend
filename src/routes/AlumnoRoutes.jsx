@@ -11,10 +11,7 @@ export default function AlumnoRoutes() {
     <Routes>
       <Route path="ramos"            element={<AlumnoRamoScreen />} />
       <Route path="secciones"        element={<AlumnoSeccionScreen />} />
-      <Route path="horario"          element={<AlumnoModifyScreen />} />
-      <Route path="modificar-ramos"  element={<AlumnoModifyRamoScreen />} />
-      <Route path="modificar-secciones" element={<AlumnoModifySeccionScreen />} />
-      <Route path="modificar-confirmado" element={<AlumnoModifiedSeccionScreen />} />
+      <Route path="modificar-ramos" element={<AlumnoModifyRamoScreen />} />
       <Route path="*" element={<Navigate to="ramos" replace />} />
     </Routes>
   );

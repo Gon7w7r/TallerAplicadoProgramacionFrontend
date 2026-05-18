@@ -7,12 +7,13 @@ const generarHoras = (rows) => {
   let maxMin = -Infinity;
 
   rows.forEach((row) => {
+    if (!row?.hora) return;
     const [h, m] = row.hora.split(":").map(Number);
     minMin = Math.min(minMin, h * 60 + m);
 
     DIAS.forEach((dia) => {
-      if (row[dia]) {
-        const [fh, fm] = row[dia].fin.split(":").map(Number);
+      if (row[dia]?.fin) {
+      const [fh, fm] = row[dia].fin.split(":").map(Number);
         maxMin = Math.max(maxMin, fh * 60 + fm);
       }
     });

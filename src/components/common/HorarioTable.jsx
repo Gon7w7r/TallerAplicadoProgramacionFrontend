@@ -10,7 +10,6 @@ const generarHoras = (rows) => {
     const [h, m] = row.hora.split(":").map(Number);
     minMin = Math.min(minMin, h * 60 + m);
 
-    // Usa el fin real de cada bloque para saber hasta dónde llega
     DIAS.forEach((dia) => {
       if (row[dia]) {
         const [fh, fm] = row[dia].fin.split(":").map(Number);
@@ -28,10 +27,9 @@ const generarHoras = (rows) => {
   return horas;
 };
 
-
 export default function HorarioTable({ rows = [] }) {
 
-  const HORAS = generarHoras(rows);  // ← dinámico
+  const HORAS = generarHoras(rows);
 
   const rowMap = {};
   rows.forEach((r) => { rowMap[r.hora] = r; });
@@ -42,11 +40,10 @@ export default function HorarioTable({ rows = [] }) {
     <table className="w-full text-xs border-collapse table-fixed">
 
       <thead>
-        <tr style={{ backgroundColor: "#1A2E4A" }}>
+        <tr className="bg-[#1A2E4A] dark:bg-[#0a0a12] transition-colors duration-300">
           <th className="px-4 py-3 text-left text-white font-semibold w-20">
             Hora
           </th>
-
           {DIAS.map((d) => (
             <th
               key={d}
@@ -59,7 +56,6 @@ export default function HorarioTable({ rows = [] }) {
       </thead>
 
       <tbody>
-
         {HORAS.map((hora, rowIndex) => {
 
           const row = rowMap[hora] || {};
@@ -67,7 +63,11 @@ export default function HorarioTable({ rows = [] }) {
           return (
             <tr key={hora} className="h-20">
 
-              <td className="border px-2 py-2 font-medium bg-gray-50">
+              <td className="border px-2 py-2 font-medium
+                border-gray-200 dark:border-gray-700
+                bg-gray-50 dark:bg-[#13131f]
+                text-gray-700 dark:text-gray-300
+                transition-colors duration-300">
                 {hora}
               </td>
 
@@ -75,9 +75,7 @@ export default function HorarioTable({ rows = [] }) {
 
                 const ocupadoKey = `${dia}-${rowIndex}`;
 
-                if (ocupadas[ocupadoKey]) {
-                  return null;
-                }
+                if (ocupadas[ocupadoKey]) return null;
 
                 const bloque = row[dia];
 
@@ -85,7 +83,8 @@ export default function HorarioTable({ rows = [] }) {
                   return (
                     <td
                       key={dia}
-                      className="border border-gray-200"
+                      className="border border-gray-200 dark:border-gray-700
+                        dark:bg-[#1e1e2e] transition-colors duration-300"
                     />
                   );
                 }
@@ -99,24 +98,24 @@ export default function HorarioTable({ rows = [] }) {
                     key={dia}
                     rowSpan={bloque.span}
                     className={`
-                      border border-gray-200
+                      border border-gray-200 dark:border-gray-700
                       ${bloque.estilo?.bg}
+                      ${bloque.estilo?.darkBg}
                       ${bloque.estilo?.text}
+                      ${bloque.estilo?.darkText}
                       align-top p-2
+                      transition-colors duration-300
                     `}
                   >
                     <div className="font-semibold">
                       {bloque.ramo}
                     </div>
-                    
-                    <div className="text-xs mt-1 opacity-80"> 
+                    <div className="text-xs mt-1 opacity-80">
                       Sección {bloque.seccion}
                     </div>
-
                     <div className="text-xs mt-1">
                       {bloque.inicio} - {bloque.fin}
                     </div>
-
                     <div className="text-xs opacity-70">
                       {bloque.sala}
                     </div>
@@ -129,7 +128,6 @@ export default function HorarioTable({ rows = [] }) {
           );
 
         })}
-
       </tbody>
 
     </table>

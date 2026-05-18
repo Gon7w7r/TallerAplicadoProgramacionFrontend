@@ -1,26 +1,38 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import LoginScreen from "../screens/login/LoginScreen";
-import AlumnoRoutes from "./AlumnoRoutes";
-import AuthRoute from "./AuthRoute";
+import LoginScreen    from "../screens/login/LoginScreen";
+import AdminHomeScreen from "../screens/admin/AdminHomeScreen";
+import AlumnoRoutes   from "./AlumnoRoutes";
+import AuthRoute      from "./AuthRoute";
+
+function RoleRedirect() {
+  const usuario = JSON.parse(sessionStorage.getItem("usuario") || "{}");
+  if (usuario?.tipoUsuario === "ALUMNO") return <Navigate to="/alumno/ramos" replace />;
+  if (usuario?.tipoUsuario === "ADMINISTRATIVO") return <Navigate to="/admin/home" replace />;
+  if (usuario?.tipoUsuario === "SUPERADMIN") return <Navigate to="/admin/home" replace />;
+  return <Navigate to="/login" replace />;
+}
 
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Ruta pública */}
       <Route path="/login" element={<LoginScreen />} />
 
-      {/* Rutas protegidas del alumno */}
+      {/* Redirige / según rol */}
+      <Route path="/" element={<RoleRedirect />} />
+
+      {/* Rutas alumno */}
       <Route
         path="/alumno/*"
-        element={
-          <AuthRoute>
-            <AlumnoRoutes />
-          </AuthRoute>
-        }
+        element={<AuthRoute><AlumnoRoutes /></AuthRoute>}
       />
 
-      {/* Redirect por defecto */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Rutas admin */}
+      <Route
+        path="/admin/home"
+        element={<AuthRoute><AdminHomeScreen /></AuthRoute>}
+      />
+
+      <Route path="*" element={<RoleRedirect />} />
     </Routes>
   );
 }

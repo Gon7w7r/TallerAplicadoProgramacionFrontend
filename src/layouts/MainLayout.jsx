@@ -1,71 +1,80 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import Sidebar from "../components/common/Sidebar";
+import AccessibilityPanel from "../components/common/AccessibilityPanel";
 
 export default function MainLayout({
   title,
-  showLogout = true,
+  subtitle,
+  navItems = [],
   left,
   right,
   footer,
   singleColumn = false,
   children,
 }) {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("rut");
-    navigate("/login");
-  };
+  const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Borde exterior que simula el frame del mockup */}
-      <div className="m-4 border border-black flex flex-col flex-1 min-h-[calc(100vh-2rem)]">
+    <>
+      <div className="min-h-screen flex" style={{ backgroundColor: "#eef0f7" }}>
 
-        {/* Header */}
-        <header className="border-b border-black px-3 py-1 flex items-center justify-between bg-white shrink-0">
-          <span className="text-xs">{title}</span>
-          {showLogout && (
-            <button
-              onClick={handleLogout}
-              className="text-xs border border-black px-2 py-0.5 hover:bg-gray-100"
-            >
-              Logout
-            </button>
-          )}
-        </header>
+        {/* ── Sidebar ── */}
+        <Sidebar navItems={navItems} activePath={location.pathname} />
 
-        {/* Body */}
-        <main className="flex-1 flex flex-col p-6">
-          {singleColumn ? (
-            <div className="flex-1 flex items-center justify-center">
-              {children}
-            </div>
-          ) : (
-            <div className="flex gap-8 flex-1">
-              {/* Columna izquierda */}
-              {left && (
-                <div className="w-64 shrink-0">
-                  {left}
-                </div>
+        {/* ── Área principal ── */}
+        <div className="flex-1 flex flex-col min-w-0 p-6 gap-4">
+
+          {/* Breadcrumb / título */}
+          {(title || subtitle) && (
+            <header className="flex items-center gap-3 shrink-0">
+              {title && (
+                <span className="text-sm font-semibold text-gray-800">
+                  {title}
+                </span>
               )}
-              {/* Columna derecha */}
-              {right && (
-                <div className="flex-1">
-                  {right}
-                </div>
+              {subtitle && (
+                <>
+                  <span className="text-sm text-gray-300">—</span>
+                  <span className="text-sm text-gray-400">{subtitle}</span>
+                </>
               )}
+            </header>
+          )}
+
+          {/* Cuerpo */}
+          <main className="flex-1 flex flex-col min-w-0">
+            {singleColumn ? (
+              <div className="flex-1 flex items-center justify-center">
+                {children}
+              </div>
+            ) : (
+              <div className="flex gap-4 flex-1 items-start">
+                {left && (
+                  <div className="w-60 shrink-0">
+                    {left}
+                  </div>
+                )}
+                {right && (
+                  <div className="flex-1 min-w-0">
+                    {right}
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+
+          {/* Footer */}
+          {footer && (
+            <div className="shrink-0 flex justify-end pt-2">
+              {footer}
             </div>
           )}
-        </main>
 
-        {/* Footer */}
-        {footer && (
-          <div className="shrink-0 px-6 py-3 flex justify-end border-t border-gray-200">
-            {footer}
-          </div>
-        )}
-
+        </div>
       </div>
-    </div>
+
+      {/* ── Accesibilidad (igual que en Login) ── */}
+      <AccessibilityPanel />
+    </>
   );
 }

@@ -1,4 +1,4 @@
-const DIAS = ["L", "M", "X", "J", "V", "S"];
+const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 const generarHoras = (rows) => {
   if (rows.length === 0) return [];

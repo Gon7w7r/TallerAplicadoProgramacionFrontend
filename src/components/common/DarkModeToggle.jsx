@@ -6,6 +6,7 @@ export default function DarkModeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
       className={`
         relative flex items-center w-14 h-7 rounded-full p-1 transition-colors duration-300
@@ -13,7 +14,6 @@ export default function DarkModeToggle() {
       `}
       aria-label="Toggle dark mode"
     >
-      {/* Círculo deslizante */}
       <span
         className={`
           absolute w-5 h-5 rounded-full flex items-center justify-center

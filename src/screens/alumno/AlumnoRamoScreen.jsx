@@ -1,37 +1,20 @@
 import { useEffect, useState } from "react";
 import HorarioTable from "../../components/common/HorarioTable";
 import MainLayout from "../../layouts/MainLayout";
+import { ALUMNO_NAV } from "../../config/navConfig";
 import { useInscripcion } from "../../context/InscripcionContext";
-import {
-  getAsignaturasDisponibles,
-  getSeccionesByAsignatura,
-  getInscripcionesByAlumno,
-  postInscribirMultiple,
-} from "../../api/inscripcionApiRequest";
-
-const ESTILOS_RAMOS = [
-  { border: "border-blue-500",    bg: "bg-blue-100",    darkBg: "dark:bg-blue-900/30",    text: "text-blue-800",    darkText: "dark:text-blue-300"    },
-  { border: "border-emerald-500", bg: "bg-emerald-100", darkBg: "dark:bg-emerald-900/30", text: "text-emerald-800", darkText: "dark:text-emerald-300" },
-  { border: "border-amber-500",   bg: "bg-amber-100",   darkBg: "dark:bg-amber-900/30",   text: "text-amber-800",   darkText: "dark:text-amber-300"   },
-  { border: "border-purple-500",  bg: "bg-purple-100",  darkBg: "dark:bg-purple-900/30",  text: "text-purple-800",  darkText: "dark:text-purple-300"  },
-  { border: "border-pink-500",    bg: "bg-pink-100",    darkBg: "dark:bg-pink-900/30",    text: "text-pink-800",    darkText: "dark:text-pink-300"    },
-  { border: "border-cyan-500",    bg: "bg-cyan-100",    darkBg: "dark:bg-cyan-900/30",    text: "text-cyan-800",    darkText: "dark:text-cyan-300"    },
-];
-
-const NAV_ITEMS = [
-  { label: "Inscripción", path: "/alumno/ramos"           },
-  { label: "Mi Horario",  path: "/alumno/horario"         },
-  { label: "Modificar",   path: "/alumno/modificar-ramos" },
-];
+import { getAsignaturasDisponibles, getSeccionesByAsignatura, getInscripcionesByAlumno, postInscribirMultiple } from "../../api/inscripcionApiRequest";
+import HorarioLayout from "../../layouts/HorarioLayout";
+import { ESTILOS_RAMOS, DIA_MAP, getEstiloRamo } from "../../config/ramosConfig";
 
 export default function AlumnoRamoScreen() {
   const { inscripciones, agregarSeccion, quitarSeccion } = useInscripcion();
-  const usuario  = JSON.parse(sessionStorage.getItem("usuario"));
+  const usuario = JSON.parse(sessionStorage.getItem("usuario"));
   const idAlumno = usuario?.idEntidad;
 
-  const [selected, setSelected]                         = useState(null);
-  const [asignaturas, setAsignaturas]                   = useState([]);
-  const [secciones, setSecciones]                       = useState({});
+  const [selected, setSelected] = useState(null);
+  const [asignaturas, setAsignaturas] = useState([]);
+  const [secciones, setSecciones] = useState({});
   const [inscripcionesBackend, setInscripcionesBackend] = useState([]);
 
   // ── Carga inicial ────────────────────────────────────────────────────────
@@ -99,8 +82,7 @@ export default function AlumnoRamoScreen() {
   // ── Horario ──────────────────────────────────────────────────────────────
   const buildHorario = () => {
     const bloques = {};
-    const diaMap  = { LUNES:"L", MARTES:"M", MIERCOLES:"X", JUEVES:"J", VIERNES:"V", SABADO:"S" };
-    const norm    = (s) => s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const norm = (s) => s.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     Object.values(inscripciones).forEach((inscripcion) => {
       const seccion = Object.values(secciones)
@@ -111,22 +93,21 @@ export default function AlumnoRamoScreen() {
       seccion.horarios.forEach((h) => {
         const [hi, mi] = h.horario.horaInicio.split(":").map(Number);
         const [hf, mf] = h.horario.horaFin.split(":").map(Number);
-        const span       = ((hf * 60 + mf) - (hi * 60 + mi)) / 60;
+        const span = ((hf * 60 + mf) - (hi * 60 + mi)) / 60;
         const horaInicio = h.horario.horaInicio.slice(0, 5);
-        const dia        = diaMap[norm(h.horario.diaSemana)];
+        const dia = DIA_MAP[norm(h.horario.diaSemana)];
         if (!dia) return;
 
         if (!bloques[horaInicio]) bloques[horaInicio] = { hora: horaInicio };
 
-        const idx = asignaturas.findIndex((a) => a.idAsignatura === inscripcion.ramoId);
         bloques[horaInicio][dia] = {
-          ramo:    inscripcion.ramoNombre,
-          sala:    seccion.sala.nombre,
+          ramo: inscripcion.ramoNombre,
+          sala: seccion.sala.nombre,
           seccion: seccion.idSeccion,
-          inicio:  horaInicio,
-          fin:     h.horario.horaFin.slice(0, 5),
+          inicio: horaInicio,
+          fin: h.horario.horaFin.slice(0, 5),
           span,
-          estilo:  ESTILOS_RAMOS[idx % ESTILOS_RAMOS.length],
+          estilo: getEstiloRamo(inscripcion.ramoId),
         };
       });
     });
@@ -137,7 +118,7 @@ export default function AlumnoRamoScreen() {
   // ── Derivados ────────────────────────────────────────────────────────────
   const rows = buildHorario();
   const seccionesOriginales = [...inscripcionesBackend.map((i) => i.idSeccion)].sort();
-  const seccionesActuales   = [...Object.values(inscripciones).map((i) => i.seccionId)].sort();
+  const seccionesActuales = [...Object.values(inscripciones).map((i) => i.seccionId)].sort();
   const hayCambios = JSON.stringify(seccionesOriginales) !== JSON.stringify(seccionesActuales);
 
   // ── Slots del layout ─────────────────────────────────────────────────────
@@ -151,12 +132,12 @@ export default function AlumnoRamoScreen() {
       </p>
 
       {asignaturas.map((r, index) => {
-        const estilo = ESTILOS_RAMOS[index % ESTILOS_RAMOS.length];
+        const estilo = getEstiloRamo(r.idAsignatura);
         const inscripcionExistente = inscripcionesBackend.find(
           (i) => i.idAsignatura === r.idAsignatura
         );
         const inscrito = !!inscripciones[r.idAsignatura] || !!inscripcionExistente;
-        const abierto  = selected === r.idAsignatura;
+        const abierto = selected === r.idAsignatura;
 
         return (
           <div
@@ -245,13 +226,14 @@ export default function AlumnoRamoScreen() {
   ) : null;
 
   return (
-    <MainLayout
-      title="Inscripción de Ramos"
-      subtitle="Selecciona tus secciones"
-      navItems={NAV_ITEMS}
-      left={leftPanel}
-      right={rightPanel}
-      footer={footerSlot}
-    />
+    <MainLayout navItems={ALUMNO_NAV}>
+      <HorarioLayout
+        title="Inscripción de Ramos"
+        subtitle="Selecciona tus secciones"
+        left={leftPanel}
+        right={rightPanel}
+        footer={footerSlot}
+      />
+    </MainLayout>
   );
 }

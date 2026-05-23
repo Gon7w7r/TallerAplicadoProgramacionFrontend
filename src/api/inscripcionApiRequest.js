@@ -1,6 +1,5 @@
 const BASE = "http://localhost:8080";
 
-// Lee el rol guardado en sessionStorage tras el login
 const headers = () => {
     const usuario = JSON.parse(sessionStorage.getItem("usuario") || "{}");
     return {
@@ -27,3 +26,12 @@ export const postInscribirMultiple = ({ idAlumno, idPeriodo, secciones }) =>
         headers: headers(),
         body: JSON.stringify({ idAlumno, idPeriodo, secciones }),
     }).then((r) => r.json());
+
+export const actualizarHorario = ({ idAlumno, idPeriodo, secciones }) =>
+    fetch(`${BASE}/inscripciones/actualizar-horario`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({ idAlumno, idPeriodo, secciones }),
+    }).then((r) => r.json());
+
+
